@@ -18,7 +18,7 @@ const StyledOverlayContainer = styled.div`
 `
 
 
-const OverlayIconContainer = styled.div`
+const OverlayIconContainer = styled.button`
   width: 64px;
   height: 64px;
   background: none;
@@ -26,26 +26,27 @@ const OverlayIconContainer = styled.div`
   outline: none;
   cursor: pointer;
   position: absolute;
+  align-items: center;
+  justify-content: center;
+  display: inline-grid;
 
-  & svg {
-    width: 32px;
-    height: 32px;
+  & h1 {
+    font-size: 32px;
+    font-weight: bolder;
+    opacity: 40%;
+    display: flex;
     overflow: visible !important;
-  }
-
-  & svg path {
-    stroke: rgba(255, 255, 255, 0.5);
     transition-property: stroke, filter;
     transition-duration: 140ms;
   }
 
-  &:hover svg path {
-    stroke: rgba(255, 255, 255, 1);
+  &:hover h1 {
+    visibility: unset;
     filter: drop-shadow(0px 0px 2px rgba(0, 0, 0, 0.6));
   }
 
-  &.hide svg path {
-    stroke: rgba(255, 255, 255, 0);
+  &.hide h1 {
+    visibility: hidden;
     transition: stroke 300ms;
   }
 `
@@ -58,6 +59,9 @@ const OverlayButton = styled.button`
   outline: none;
   cursor: pointer;
   position: absolute;
+  align-items: center;
+  justify-content: center;
+  display: inline-grid;
 
   & svg {
     width: 32px;
@@ -90,8 +94,7 @@ const SlideButton = styled(OverlayButton)<{active:boolean}>`
   left: 92px;
   top: 28px;
 `
-
-const IntervalDiv = styled(OverlayIconContainer)<{time:integer}>`
+const IntervalButton = styled(OverlayIconContainer)<{time:integer}>`
   left: 156px;
   top: 28px;
 `
@@ -124,6 +127,7 @@ const PresentNavigationOverlay = ({
 }: PresentNavigationOverlayProps) => {
   const [hide, setHide] = useState(true)
   const [slide, setSlide] = useState<boolean>(false)
+  const [slideInterval, setSlideInterval] = useState<integer>(3)
   const onMouseMove = useRef<null | DebouncedFn<() => void>>(null)
 
   useEffect(() => {
@@ -145,14 +149,17 @@ const PresentNavigationOverlay = ({
       if (slide) { 
         dispatchMedia({ type: 'nextImage'})
       }
-    }, 3000)
+    }, slideInterval*1000)
     return () => {
       clearInterval(interval)
     }
-  }, [slide])
+  }, [slide,slideInterval])
   
   const toggle = () => {
     setSlide( (s) => !s ) 
+  }
+  const toggleSlideInterval = () => {
+    setSlideInterval( (s) => (s+1) % 10 == 0 ? 1 : (s+1) % 10  ) 
   }
 
   const handlers = useSwipeable({
@@ -208,11 +215,16 @@ const PresentNavigationOverlay = ({
       >
         {slide ? <PauseIcon /> : <PlayIcon />}
       </SlideButton>
-      <IntervalDiv
+      <IntervalButton
         aria-label="Slideshow Button"
         className={hide ? 'hide' : undefined}
+	time={slideInterval}
+        onClick={toggleSlideInterval}
       >
-      </IntervalDiv>
+        <h1
+          className={hide ? 'hide' : undefined}
+	> {slideInterval}s </h1>
+      </IntervalButton>
     </div>
     </StyledOverlayContainer>
   )
