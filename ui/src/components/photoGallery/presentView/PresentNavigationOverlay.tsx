@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { MediaType } from '../../../__generated__/globalTypes'
 import styled from 'styled-components'
 import { debounce, DebouncedFn } from '../../../helpers/utils'
 import { closePresentModeAction, GalleryAction } from '../mediaGalleryReducer'
@@ -124,6 +125,9 @@ const PresentNavigationOverlay = ({
   children,
   dispatchMedia,
   disableSaveCloseInHistory,
+  videoRef,
+  videos,
+  activemedia,
 }: PresentNavigationOverlayProps) => {
   const [hide, setHide] = useState(true)
   const [slide, setSlide] = useState<boolean>(false)
@@ -145,21 +149,64 @@ const PresentNavigationOverlay = ({
   }, [])
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (slide) { 
+    console.log(videos);
+    
+    return () => {}
+  }, [])
+
+
+  useEffect(() => {
+    console.log("Entered Initial funtion")
+    if (slide && activemedia.type === MediaType.Video) {
+      console.log("intitial")
+      videoRef.current.play();
+    }
+
+    const playEnd = () => {
+      if (slide) {
         dispatchMedia({ type: 'nextImage'})
       }
+    }
+
+    if ( videoRef.current != null ) {
+      videoRef.current.addEventListener('ended', playEnd);
+    }	
+    return () => {
+      if ( videoRef.current != null )
+        videoRef.current.removeEventListener('ended', playEnd);
+    }
+
+  }, [activemedia])
+
+  useEffect(() => {
+
+    const interval = setInterval(() => {
+      if (slide && activemedia.type === MediaType.Photo) { 
+        dispatchMedia({ type: 'nextImage'})
+	      console.log("dispatch new image with current type")
+	      console.log(activemedia.type)
+	      console.log(MediaType.Photo)
+      }
     }, slideInterval*1000)
+
     return () => {
       clearInterval(interval)
     }
-  }, [slide,slideInterval])
+
+  }, [slide,slideInterval,activemedia])
   
   const toggle = () => {
-    setSlide( (s) => !s ) 
+    setSlide( (s) => !s );
+    if (activemedia.type === MediaType.Video){
+      videoRef.current.play()  
+    }
   }
   const toggleSlideInterval = () => {
     setSlideInterval( (s) => (s+1) % 10 == 0 ? 1 : (s+1) % 10  ) 
+  }
+
+  const toggleSlideInterval = () => {
+    setSlideMode( (s) => (s+1) % 3  ) 
   }
 
   const handlers = useSwipeable({
@@ -218,13 +265,23 @@ const PresentNavigationOverlay = ({
       <IntervalButton
         aria-label="Slideshow Button"
         className={hide ? 'hide' : undefined}
-	time={slideInterval}
+	      time={slideInterval}
         onClick={toggleSlideInterval}
       >
         <h1
           className={hide ? 'hide' : undefined}
-	> {slideInterval}s </h1>
+	      > {slideInterval}s </h1>
       </IntervalButton>
+      <SlideModeButton
+        aria-label="Slideshow Button"
+        className={hide ? 'hide' : undefined}
+	      mode={slideMode}
+        onClick={toggleSlideMode}
+      >
+        <h1
+          className={hide ? 'hide' : undefined}
+	       > {slideMode}s </h1>
+      </SlideModeButton>
     </div>
     </StyledOverlayContainer>
   )

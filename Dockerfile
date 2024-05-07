@@ -32,7 +32,7 @@ COPY ui /app
 RUN npm run build -- --base=$UI_PUBLIC_URL
 
 ### Build API ###
-FROM --platform=${BUILDPLATFORM:-linux/amd64} debian:bookworm AS api
+FROM --platform=${BUILDPLATFORM:-linux/amd64} debian:stable-20240408 AS api
 ARG TARGETPLATFORM
 
 COPY docker/install_build_dependencies.sh /tmp/
