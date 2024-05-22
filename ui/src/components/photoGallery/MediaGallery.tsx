@@ -67,19 +67,19 @@ const MediaGallery = ({ mediaState, dispatchMedia }: MediaGalleryProps) => {
   const { media, activeIndex, presenting } = mediaState
 
   const { updateSidebar } = useContext(SidebarContext)
- 
-  const videos = []
-
-  media.forEach((v, i) => {
-    if (v.type === MediaType.Video){
-      videos.push(i)
-    }
-  });
 
   let mediaElements = []
+  let videoElements = []
+  let photoElements = []
+
   if (media) {
     mediaElements = media.map((media, index) => {
       const active = activeIndex == index
+
+      if (media.type === MediaType.Video)
+        videoElements.push(index)
+      else 
+        photoElements.push(index)
 
       return (
         <MediaThumbnail
@@ -111,6 +111,9 @@ const MediaGallery = ({ mediaState, dispatchMedia }: MediaGalleryProps) => {
     }
   }
 
+  mediaState.videoMedia = videoElements;
+  mediaState.photoMedia = photoElements;
+
   return (
     <>
       <Gallery data-testid="photo-gallery-wrapper">
@@ -120,7 +123,6 @@ const MediaGallery = ({ mediaState, dispatchMedia }: MediaGalleryProps) => {
       {presenting && (
         <PresentView
           activeMedia={mediaState.media[mediaState.activeIndex]}
-          videos={videos}
           dispatchMedia={dispatchMedia}
         />
       )}

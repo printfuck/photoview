@@ -37,21 +37,12 @@ const PresentView = ({
   activeMedia,
   dispatchMedia,
   disableSaveCloseInHistory,
-  videos,
 }: PresentViewProps) => {
   const videoRef = useRef(null);
 
   const setVideo = (ref) => {
     videoRef.current = ref;
     console.log("passed");
-  };
-
-  const handlePlayVideo = () => {
-    if (videoRef.current) {
-      videoRef.current.play();
-    } else {
-      console.log(videoRef);
-    }
   };
 
   useEffect(() => {
@@ -66,14 +57,8 @@ const PresentView = ({
         dispatchMedia({ type: 'previousImage' })
       }
 
-      if (e.key == 'ArrowUp') {
-        e.stopPropagation()
-        handlePlayVideo()
-      }
-
       if (e.key == 'Escape') {
         e.stopPropagation()
-
         if (disableSaveCloseInHistory === true) {
           dispatchMedia({ type: 'closePresentMode' })
         } else {
@@ -96,9 +81,8 @@ const PresentView = ({
       <PresentNavigationOverlay
         dispatchMedia={dispatchMedia}
         disableSaveCloseInHistory
-        activemedia={activeMedia}
+        activeMedia={activeMedia}
         videoRef={videoRef}
-        videos={videos}
       >
         <PresentMedia media={activeMedia} imageLoaded={imageLoaded} setVideo={setVideo}/>
       </PresentNavigationOverlay>

@@ -11,6 +11,9 @@ import PlayIcon from './icons/Play'
 import PauseIcon from './icons/Pause'
 import NextIcon from './icons/Next'
 import PrevIcon from './icons/Previous'
+import PhotoIcon from './icons/Photo'
+import VideoIcon from './icons/Video'
+import PhotoVideoIcon from './icons/PhotoVideo'
 
 const StyledOverlayContainer = styled.div`
   width: 100%;
@@ -95,6 +98,10 @@ const SlideButton = styled(OverlayButton)<{active:boolean}>`
   left: 92px;
   top: 28px;
 `
+const SlideModeButton = styled(OverlayButton)<{active:boolean}>`
+  left: 220px;
+  top: 28px;
+`
 const IntervalButton = styled(OverlayIconContainer)<{time:integer}>`
   left: 156px;
   top: 28px;
@@ -126,12 +133,13 @@ const PresentNavigationOverlay = ({
   dispatchMedia,
   disableSaveCloseInHistory,
   videoRef,
-  videos,
-  activemedia,
+  activeMedia,
 }: PresentNavigationOverlayProps) => {
   const [hide, setHide] = useState(true)
   const [slide, setSlide] = useState<boolean>(false)
+  const [aux, setAux] = useState<boolean>(false)
   const [slideInterval, setSlideInterval] = useState<integer>(3)
+  const [slideMode, setSlideMode] = useState<integer>(2)
   const onMouseMove = useRef<null | DebouncedFn<() => void>>(null)
 
   useEffect(() => {
@@ -148,56 +156,73 @@ const PresentNavigationOverlay = ({
     }
   }, [])
 
-  useEffect(() => {
-    console.log(videos);
-    
-    return () => {}
-  }, [])
 
 
   useEffect(() => {
-    console.log("Entered Initial funtion")
-    if (slide && activemedia.type === MediaType.Video) {
-      console.log("intitial")
-      videoRef.current.play();
-    }
+    const keyDownEvent = (e: KeyboardEvent) => {
 
-    const playEnd = () => {
-      if (slide) {
-        dispatchMedia({ type: 'nextImage'})
+      if (e.code == 'Space') {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        handleSpace();
       }
     }
 
+    const handleSpace = () => {
+      if (activeMedia.type === MediaType.Video && ! slide ) {
+        if (videoRef.current.paused ){
+          videoRef.current.play()
+        } else {
+          videoRef.current.pause()
+        } 
+      } else {
+        setSlide( (s) => !s );
+      } 
+    };
+
+    document.addEventListener('keydown', keyDownEvent)
+
+    return function cleanup() {
+      document.removeEventListener('keydown', keyDownEvent)
+    }
+  })
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (slide && activeMedia.type === MediaType.Photo) { 
+        //dispatchMedia({ type: 'nextImage'})
+        nextSlide()
+      }
+    }, slideInterval*1000)
+
+    if (slide && activeMedia.type === MediaType.Video) {
+      videoRef.current.play();
+    }
+
+    // Continue after Video played
+    const playEnd = () => {
+      if (slide) {
+        setAux( (a) => !a )
+        nextSlide()
+      }
+    }
+
+    // if video, register playEnd at 'ended'
     if ( videoRef.current != null ) {
       videoRef.current.addEventListener('ended', playEnd);
-    }	
+    }
+
     return () => {
+      clearInterval(interval);
       if ( videoRef.current != null )
         videoRef.current.removeEventListener('ended', playEnd);
     }
 
-  }, [activemedia])
-
-  useEffect(() => {
-
-    const interval = setInterval(() => {
-      if (slide && activemedia.type === MediaType.Photo) { 
-        dispatchMedia({ type: 'nextImage'})
-	      console.log("dispatch new image with current type")
-	      console.log(activemedia.type)
-	      console.log(MediaType.Photo)
-      }
-    }, slideInterval*1000)
-
-    return () => {
-      clearInterval(interval)
-    }
-
-  }, [slide,slideInterval,activemedia])
+  }, [slide,slideInterval,activeMedia,aux])
   
   const toggle = () => {
     setSlide( (s) => !s );
-    if (activemedia.type === MediaType.Video){
+    if (activeMedia.type === MediaType.Video){ //and not playing
       videoRef.current.play()  
     }
   }
@@ -205,8 +230,22 @@ const PresentNavigationOverlay = ({
     setSlideInterval( (s) => (s+1) % 10 == 0 ? 1 : (s+1) % 10  ) 
   }
 
-  const toggleSlideInterval = () => {
-    setSlideMode( (s) => (s+1) % 3  ) 
+  const nextSlide = () => {
+    switch (slideMode) {
+      case 0:
+        dispatchMedia({ type: 'nextSlidePhoto'})
+        return;
+      case 1:
+        dispatchMedia({ type: 'nextSlideVideo'})
+        return;
+      case 2:
+        dispatchMedia({ type: 'nextImage'})  
+        return;
+    }
+  }
+
+  const toggleSlideMode = () => {
+    setSlideMode( (s) => (s+1) % 3 );
   }
 
   const handlers = useSwipeable({
@@ -255,7 +294,7 @@ const PresentNavigationOverlay = ({
         <ExitIcon />
       </ExitButton>      
       <SlideButton
-        aria-label="Slideshow Button"
+        aria-label="Slideshow Control Button"
         className={hide ? 'hide' : undefined}
         active={slide}
         onClick={toggle}
@@ -263,7 +302,7 @@ const PresentNavigationOverlay = ({
         {slide ? <PauseIcon /> : <PlayIcon />}
       </SlideButton>
       <IntervalButton
-        aria-label="Slideshow Button"
+        aria-label="Slideshow Interval Control Button"
         className={hide ? 'hide' : undefined}
 	      time={slideInterval}
         onClick={toggleSlideInterval}
@@ -273,14 +312,11 @@ const PresentNavigationOverlay = ({
 	      > {slideInterval}s </h1>
       </IntervalButton>
       <SlideModeButton
-        aria-label="Slideshow Button"
+        aria-label="Slideshow Mode Control Button"
         className={hide ? 'hide' : undefined}
-	      mode={slideMode}
-        onClick={toggleSlideMode}
+	      onClick={toggleSlideMode}
       >
-        <h1
-          className={hide ? 'hide' : undefined}
-	       > {slideMode}s </h1>
+        {slideMode > 1 ? <PhotoVideoIcon /> : (slideMode > 0 ? <VideoIcon /> : <PhotoIcon />) }
       </SlideModeButton>
     </div>
     </StyledOverlayContainer>
